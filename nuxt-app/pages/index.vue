@@ -5,12 +5,12 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      message: 'Hello, Nuxt!'
-    }
-  }
-}
+<script setup>
+  import { useAsyncData } from 'nuxt/app'
+  const { data: message, pending } = await useAsyncData('message', async () => {
+    const [message] = await Promise.all([
+      $fetch('http://backend:3000/data')
+      ])
+    return { message }
+    })
 </script>
