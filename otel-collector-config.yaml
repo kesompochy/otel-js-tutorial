@@ -8,7 +8,9 @@ exporters:
   logging:
     loglevel: debug
   otlp:
-    endpoint: "http://localhost:4317"
+    endpoint: tempo:4317
+    tls:
+      insecure: true
 
 service:
   pipelines:

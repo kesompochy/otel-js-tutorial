@@ -9,6 +9,11 @@ services:
     command: sh -c "bun install && bun run dev"
     ports:
       - "3000:3000"
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "collector:4317"
+      OTEL_SERVICE_NAME: "frontend"
+    networks:
+      - app-network
   backend:
     build:
       context: ./backend
@@ -18,6 +23,8 @@ services:
     command: sh -c "npm install && npm start"
     ports:
       - "4000:3000"
+    networks:
+      - app-network
   db:
     image: mysql:8.4
     environment:
@@ -29,17 +36,52 @@ services:
       - "3306:3306"
     volumes:
       - db-data:/var/lib/mysql
+    networks:
+      - app-network
   collector:
     image: otel/opentelemetry-collector:latest
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-        - "4137:4137"
-        - "55681:55681"
+      - "4317:4317"
+      - "4318:4318"
+      - "55681:55681"
+      - "55691:55691"
+    networks:
+      - app-network
+
+  tempo:
+    image: grafana/tempo:latest
+    ports:
+      - "3200:3200"
+      - "4320:4318"
+      - "4319:4317"
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+    command: ["-config.file=/etc/tempo.yaml"]
+    user: "0:0"
+    networks:
+      - app-network
+  
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on: 
+      - tempo
+    volumes:
+      - ./grafana.ini:/etc/grafana/grafana.ini
+      - grafana-data:/var/lib/grafana
+    networks:
+      - app-network
 
 volumes:
   db-data:
+  tempo-data:
+  grafana-data:
 
 
 networks:
